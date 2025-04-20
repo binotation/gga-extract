@@ -12,6 +12,15 @@ pub fn is_gga(buffer: &[u8; 1024], sentence_begin: usize) -> bool {
     }
 }
 
+#[inline]
+pub fn calculate_sentence_length(ndtr: u16, sentence_begin: usize) -> u16 {
+    if (sentence_begin as u16) + ndtr < 1024 {
+        1024 - ndtr - (sentence_begin as u16)
+    } else {
+        (1024 - (sentence_begin as u16)) + (1024 - ndtr)
+    }
+}
+
 const POW10_10_DIGITS: [u32; 10] = [
     1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1,
 ];
@@ -138,6 +147,7 @@ pub fn extract_gga(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::prelude::*;
 
     fn shift_buffer(buffer: &mut [u8; 1024], sentence: &[u8], dest: usize) {
         let mut i = dest;
@@ -157,6 +167,21 @@ mod tests {
             assert!(!is_gga(&buffer, (i.wrapping_sub(1)) & 1023));
             assert!(is_gga(&buffer, i));
             assert!(!is_gga(&buffer, (i + 1) & 1023));
+        }
+    }
+
+    #[test]
+    fn test_calculate_sentence_length() {
+        let mut rng = rand::rng();
+        let mut ndtr: u16 = 1024;
+        let mut sentence_begin = 0;
+
+        for _ in 0..1000000 {
+            let actual_sentence_length: u16 = rng.random_range(1..83);
+            ndtr = ndtr.wrapping_sub(actual_sentence_length) & 1023;
+            let sentence_length = calculate_sentence_length(ndtr, sentence_begin);
+            assert_eq!(actual_sentence_length, sentence_length);
+            sentence_begin = (sentence_begin + sentence_length as usize) & 1023;
         }
     }
 
