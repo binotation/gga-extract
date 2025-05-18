@@ -13,11 +13,12 @@ pub fn is_gga(buffer: &[u8; 1024], sentence_begin: usize) -> bool {
 }
 
 #[inline]
-pub fn calculate_sentence_length(ndtr: u16, sentence_begin: usize) -> u16 {
-    if (sentence_begin as u16) + ndtr < 1024 {
-        1024 - ndtr - (sentence_begin as u16)
+pub fn calculate_sentence_length(ndtr: u16, sentence_begin: usize) -> usize {
+    let ndtr: usize = ndtr as usize;
+    if sentence_begin + ndtr < 1024 {
+        1024 - ndtr - sentence_begin
     } else {
-        (1024 - (sentence_begin as u16)) + (1024 - ndtr)
+        (1024 - sentence_begin) + (1024 - ndtr)
     }
 }
 
@@ -177,11 +178,11 @@ mod tests {
         let mut sentence_begin = 0;
 
         for _ in 0..1000000 {
-            let actual_sentence_length: u16 = rng.random_range(1..83);
-            ndtr = ndtr.wrapping_sub(actual_sentence_length) & 1023;
+            let actual_sentence_length = rng.random_range(1..83);
+            ndtr = ndtr.wrapping_sub(actual_sentence_length as u16) & 1023;
             let sentence_length = calculate_sentence_length(ndtr, sentence_begin);
             assert_eq!(actual_sentence_length, sentence_length);
-            sentence_begin = (sentence_begin + sentence_length as usize) & 1023;
+            sentence_begin = (sentence_begin + sentence_length) & 1023;
         }
     }
 
